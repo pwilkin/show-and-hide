@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>com.syndatis.idea.showandhide</id>
   <name>Show and hide modules</name>
-  <version>1.1</version>
+  <version>1.2</version>
   <vendor email="piotr.wilkin@syndatis.com" url="http://www.syndatis.com">Syndatis</vendor>
 
   <description><![CDATA[
