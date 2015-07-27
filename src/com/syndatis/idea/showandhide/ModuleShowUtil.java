@@ -23,61 +23,70 @@ import java.util.Set;
  */
 public class ModuleShowUtil {
 
-    public static boolean isModuleShown(Module m) {
-        return ApplicationManager.getApplication().runReadAction((Computable<Boolean>) () -> {
-            ModuleRootManager mrm = ModuleRootManager.getInstance(m);
-            Set<VirtualFile> excludeRootsSet = Sets.newHashSet(mrm.getExcludeRoots());
-            Set<VirtualFile> contentRootsSet = Sets.newHashSet(mrm.getContentRoots());
-            return !excludeRootsSet.containsAll(contentRootsSet);
+    public static boolean isModuleShown(final Module m) {
+        return ApplicationManager.getApplication().runReadAction(new Computable<Boolean>() {
+            @Override
+            public Boolean compute() {
+                ModuleRootManager mrm = ModuleRootManager.getInstance(m);
+                Set<VirtualFile> excludeRootsSet = Sets.newHashSet(mrm.getExcludeRoots());
+                Set<VirtualFile> contentRootsSet = Sets.newHashSet(mrm.getContentRoots());
+                return !excludeRootsSet.containsAll(contentRootsSet);
+            }
         });
     }
 
-    public static void showModule(Module module) {
-        ApplicationManager.getApplication().runWriteAction(() -> {
-            ModuleRootManager mrm = ModuleRootManager.getInstance(module);
-            Set<VirtualFile> roots = Sets.newHashSet(mrm.getContentRoots());
-            ModifiableRootModel modifiable = mrm.getModifiableModel();
-            for (ContentEntry contentEntry : modifiable.getContentEntries()) {
-                ExcludeFolder[] ef = contentEntry.getExcludeFolders();
-                for (ExcludeFolder e : ef) {
-                    if (roots.contains(e.getFile())) {
-                        contentEntry.removeExcludeFolder(e);
-                    }
-                }
-            }
-            modifiable.commit();
-            ChangeListManager manager = ChangeListManager.getInstance(module.getProject());
-            IgnoredFileBean[] filesToIgnoreArray = manager.getFilesToIgnore();
-            if (filesToIgnoreArray != null) {
-                List<IgnoredFileBean> filesToIgnore = Lists.newArrayList(filesToIgnoreArray);
-                Iterator<IgnoredFileBean> iterator = filesToIgnore.iterator();
-                while (iterator.hasNext()) {
-                    IgnoredFileBean ignoredFileBean = iterator.next();
-                    for (VirtualFile virtualFile : mrm.getContentRoots()) {
-                        if (ignoredFileBean.matchesFile(virtualFile)) {
-                            iterator.remove();
-                            break;
+    public static void showModule(final Module module) {
+        ApplicationManager.getApplication().runWriteAction(new Runnable() {
+
+            @Override
+            public void run() {
+                ModuleRootManager mrm = ModuleRootManager.getInstance(module);
+                Set<VirtualFile> roots = Sets.newHashSet(mrm.getContentRoots());
+                ModifiableRootModel modifiable = mrm.getModifiableModel();
+                for (ContentEntry contentEntry : modifiable.getContentEntries()) {
+                    ExcludeFolder[] ef = contentEntry.getExcludeFolders();
+                    for (ExcludeFolder e : ef) {
+                        if (roots.contains(e.getFile())) {
+                            contentEntry.removeExcludeFolder(e);
                         }
                     }
                 }
-                manager.setFilesToIgnore(filesToIgnore.toArray(new IgnoredFileBean[] {}));
+                modifiable.commit();
+                ChangeListManager manager = ChangeListManager.getInstance(module.getProject());
+                IgnoredFileBean[] filesToIgnoreArray = manager.getFilesToIgnore();
+                if (filesToIgnoreArray != null) {
+                    List<IgnoredFileBean> filesToIgnore = Lists.newArrayList(filesToIgnoreArray);
+                    Iterator<IgnoredFileBean> iterator = filesToIgnore.iterator();
+                    while (iterator.hasNext()) {
+                        IgnoredFileBean ignoredFileBean = iterator.next();
+                        for (VirtualFile virtualFile : mrm.getContentRoots()) {
+                            if (ignoredFileBean.matchesFile(virtualFile)) {
+                                iterator.remove();
+                                break;
+                            }
+                        }
+                    }
+                    manager.setFilesToIgnore(filesToIgnore.toArray(new IgnoredFileBean[] {}));
+                }
             }
-
         });
     }
 
-    public static void hideModule(Module module) {
-        ApplicationManager.getApplication().runWriteAction(() -> {
-            ModuleRootManager mrm = ModuleRootManager.getInstance(module);
-            ModifiableRootModel modifiable = mrm.getModifiableModel();
-            for (ContentEntry contentEntry : modifiable.getContentEntries()) {
-                VirtualFile root = contentEntry.getFile();
-                Set<VirtualFile> exFiles = Sets.newHashSet(contentEntry.getExcludeFolderFiles());
-                if (!exFiles.contains(root)) {
-                    contentEntry.addExcludeFolder(root);
+    public static void hideModule(final Module module) {
+        ApplicationManager.getApplication().runWriteAction(new Runnable() {
+            @Override
+            public void run() {
+                ModuleRootManager mrm = ModuleRootManager.getInstance(module);
+                ModifiableRootModel modifiable = mrm.getModifiableModel();
+                for (ContentEntry contentEntry : modifiable.getContentEntries()) {
+                    VirtualFile root = contentEntry.getFile();
+                    Set<VirtualFile> exFiles = Sets.newHashSet(contentEntry.getExcludeFolderFiles());
+                    if (!exFiles.contains(root)) {
+                        contentEntry.addExcludeFolder(root);
+                    }
                 }
+                modifiable.commit();
             }
-            modifiable.commit();
         });
     }
 }

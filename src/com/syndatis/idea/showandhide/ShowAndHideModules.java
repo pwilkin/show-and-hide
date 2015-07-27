@@ -8,6 +8,7 @@ import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.treeStructure.Tree;
+import com.intellij.ui.treeStructure.Tree.NodeFilter;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
@@ -59,7 +60,7 @@ public class ShowAndHideModules extends DialogWrapper implements TreeCellRendere
         NodeData projectData = new NodeData(project);
         DefaultMutableTreeNode projectNode = new DefaultMutableTreeNode(projectData);
         Module[] modules = ModuleManager.getInstance(project).getModules();
-        Set<TreePath> selectedPaths = new HashSet<>();
+        Set<TreePath> selectedPaths = new HashSet<TreePath>();
         for (Module module : modules) {
             NodeData modData = new NodeData(module, ModuleShowUtil.isModuleShown(module));
             DefaultMutableTreeNode modNode = new DefaultMutableTreeNode(modData);
@@ -103,11 +104,14 @@ public class ShowAndHideModules extends DialogWrapper implements TreeCellRendere
 
     @Override
     protected void doOKAction() {
-        DefaultMutableTreeNode[] selectedNodes = ((Tree) modulesTree).getSelectedNodes(DefaultMutableTreeNode.class, defaultMutableTreeNode -> {
-            NodeData data = (NodeData) defaultMutableTreeNode.getUserObject();
-            return data != null && data.module != null;
+        DefaultMutableTreeNode[] selectedNodes = ((Tree) modulesTree).getSelectedNodes(DefaultMutableTreeNode.class, new NodeFilter<DefaultMutableTreeNode>() {
+            @Override
+            public boolean accept(DefaultMutableTreeNode defaultMutableTreeNode) {
+                NodeData data = (NodeData) defaultMutableTreeNode.getUserObject();
+                return data != null && data.module != null;
+            }
         });
-        Set<Module> selectedModules = new HashSet<>();
+        Set<Module> selectedModules = new HashSet<Module>();
         for (DefaultMutableTreeNode selectedNode : selectedNodes) {
             NodeData data = (NodeData) selectedNode.getUserObject();
             selectedModules.add(data.module);
